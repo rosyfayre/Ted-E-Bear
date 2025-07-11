@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teddy Bear Adventure</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #87CEEB, #98FB98);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4A4A4A;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 60px);
+            grid-template-rows: repeat(10, 60px);
+            gap: 2px;
+            background-color: #654321;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .grid-cell {
+            width: 60px;
+            height: 60px;
+            background-color: #90EE90;
+            border: 1px solid #228B22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            border-radius: 5px;
+        }
+
+        .teddy-bear {
+            width: 50px;
+            height: 50px;
+            transition: all 0.5s ease;
+            position: absolute;
+            z-index: 10;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .reward-triangle {
+            font-size: 35px;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .path-display {
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .move-counter {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .points-display {
+            font-size: 18px;
+            color: #FF6B6B;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .celebration {
+            font-size: 24px;
+            color: #FF6B6B;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            animation: celebrate 1s infinite;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes collectTriangle {
+            0% { 
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.5) rotate(180deg);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes floatingPoints {
+            0% { 
+                transform: translateY(0px);
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .collected {
+            animation: collectTriangle 0.8s ease-out forwards;
+        }
+
+        .floating-points {
+            position: fixed;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: floatingPoints 1.5s ease-out forwards;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        body:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧸 Teddy Bear Adventure 🧸</h1>
+    
+    <div class="controls">
+        <button id="startBtn">Start Adventure!</button>
+        <button id="resetBtn">Reset</button>
+        <button id="modeBtn">Switch to Manual Mode</button>
+    </div>
+
+    <div class="path-display">
+        <div class="move-counter">Moves: <span id="moveCount">0</span></div>
+        <div class="points-display">Score: <span id="pointsCount">0</span> points</div>
+        <div id="gameMode">Mode: <span id="currentMode">Automatic Adventure</span></div>
+        <div id="pathDisplay">Path: Forward 6 → Down 2 → Left 2 → Down 5 → 🏆</div>
+        <div id="manualInstructions" style="display: none;">Use arrow keys to move the bear around! 🎮</div>
+    </div>
+
+    <div class="grid-container" id="gameGrid">
+        <!-- Grid cells will be generated by JavaScript -->
+    </div>
+
+    <div id="celebrationMessage" class="celebration" style="display: none;">
+        🎉 Congratulations! Teddy found the treasure! 🎉
+    </div>
+
+    <script>
+        class TeddyBearGame {
+            constructor() {
+                this.gridSize = 10;
+                this.bearPosition = { x: 0, y: 0 };
+                this.targetPosition = { x: 4, y: 7 };
+                this.moveSequence = [
+                    { direction: 'right', count: 6 },
+                    { direction: 'down', count: 2 },
+                    { direction: 'left', count: 2 },
+                    { direction: 'down', count: 5 }
+                ];
+                this.currentMoveIndex = 0;
+                this.currentStepInMove = 0;
+                this.totalMoves = 0;
+                this.isMoving = false;
+                this.isManualMode = false;
+                this.points = 0;
+                this.triangleCollected = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.createGrid();
+                this.placeBear();
+                this.placeReward();
+                this.setupEventListeners();
+                this.updatePointsDisplay();
+            }
+
+            createGrid() {
+                const grid = document.getElementById('gameGrid');
+                grid.innerHTML = '';
+                
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        grid.appendChild(cell);
+                    }
+                }
+            }
+
+            placeBear() {
+                const bear = document.createElement('img');
+                bear.className = 'teddy-bear';
+                bear.src = 'bear.png';
+                bear.alt = 'Teddy Bear';
+                bear.id = 'teddyBear';
+                
+                const startCell = this.getCell(0, 0);
+                startCell.appendChild(bear);
+            }
+
+            placeReward() {
+                const rewardCell = this.getCell(this.targetPosition.x, this.targetPosition.y);
+                rewardCell.innerHTML = '<div class="reward-triangle">🔺</div>';
+            }
+
+            getCell(col, row) {
+                return document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            }
+
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startAdventure());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('modeBtn').addEventListener('click', () => this.toggleMode());
+                
+                // Add keyboard event listeners for manual mode
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+                
+                // Make sure the page can receive focus for keyboard events
+                document.addEventListener('click', () => document.body.focus());
+                document.body.setAttribute('tabindex', '0');
+            }
+
+            async startAdventure() {
+                if (this.isMoving || this.isManualMode) return;
+                
+                document.getElementById('startBtn').disabled = true;
+                this.isMoving = true;
+
+                for (let moveIndex = 0; moveIndex < this.moveSequence.length; moveIndex++) {
+                    const move = this.moveSequence[moveIndex];
+                    
+                    for (let step = 0; step < move.count; step++) {
+                        await this.makeMove(move.direction);
+                        this.totalMoves++;
+                        this.updateMoveCounter();
+                        await this.delay(600);
+                    }
+                }
+
+                this.checkWin();
+                this.isMoving = false;
+                document.getElementById('startBtn').disabled = false;
+            }
+
+            async makeMove(direction) {
+                const bear = document.getElementById('teddyBear');
+                const currentCell = this.getCell(this.bearPosition.x, this.bearPosition.y);
+                
+                // Calculate new position
+                let newX = this.bearPosition.x;
+                let newY = this.bearPosition.y;
+                
+                switch (direction) {
+                    case 'right':
+                        newX = Math.min(this.gridSize - 1, this.bearPosition.x + 1);
+                        break;
+                    case 'left':
+                        newX = Math.max(0, this.bearPosition.x - 1);
+                        break;
+                    case 'down':
+                        newY = Math.min(this.gridSize - 1, this.bearPosition.y + 1);
+                        break;
+                    case 'up':
+                        newY = Math.max(0, this.bearPosition.y - 1);
+                        break;
+                }
+
+                // Move the bear
+                if (newX !== this.bearPosition.x || newY !== this.bearPosition.y) {
+                    currentCell.removeChild(bear);
+                    const newCell = this.getCell(newX, newY);
+                    newCell.appendChild(bear);
+                    
+                    this.bearPosition.x = newX;
+                    this.bearPosition.y = newY;
+                }
+            }
+
+            updateMoveCounter() {
+                document.getElementById('moveCount').textContent = this.totalMoves;
+            }
+
+            checkWin() {
+                if (this.bearPosition.x === this.targetPosition.x && 
+                    this.bearPosition.y === this.targetPosition.y && 
+                    !this.triangleCollected) {
+                    
+                    this.triangleCollected = true;
+                    this.collectTriangle();
+                }
+            }
+
+            collectTriangle() {
+                // Start triangle collection animation
+                const triangle = document.querySelector('.reward-triangle');
+                if (triangle) {
+                    triangle.classList.add('collected');
+                }
+
+                // Calculate points based on efficiency
+                const pointsEarned = this.calculatePoints();
+                this.points += pointsEarned;
+                this.updatePointsDisplay();
+
+                // Show floating points animation
+                this.showFloatingPoints(pointsEarned);
+
+                // Show celebration after animation
+                setTimeout(() => {
+                    document.getElementById('celebrationMessage').style.display = 'block';
+                    
+                    // Add some celebration effects
+                    const bear = document.getElementById('teddyBear');
+                    bear.style.animation = 'celebrate 0.5s infinite';
+                    
+                    // Place a new triangle after a delay (only in manual mode)
+                    if (this.isManualMode) {
+                        setTimeout(() => {
+                            this.placeNewTriangle();
+                            document.getElementById('celebrationMessage').style.display = 'none';
+                            bear.style.animation = '';
+                        }, 2000);
+                    }
+                }, 800);
+            }
+
+            calculatePoints() {
+                if (this.isManualMode) {
+                    // Manual mode: More efficient = more points
+                    const optimalMoves = 15; // The adventure mode path
+                    const efficiency = Math.max(0, optimalMoves - this.totalMoves);
+                    return Math.max(50, 100 + efficiency * 10); // Base 50 points, bonus for efficiency
+                } else {
+                    // Adventure mode: Fixed points for completion
+                    return 200;
+                }
+            }
+
+            showFloatingPoints(points) {
+                const targetCell = this.getCell(this.targetPosition.x, this.targetPosition.y);
+                const rect = targetCell.getBoundingClientRect();
+                
+                const pointsElement = document.createElement('div');
+                pointsElement.className = 'floating-points';
+                pointsElement.textContent = `+${points}`;
+                pointsElement.style.left = rect.left + rect.width / 2 - 20 + 'px';
+                pointsElement.style.top = rect.top + rect.height / 2 - 10 + 'px';
+                
+                document.body.appendChild(pointsElement);
+                
+                // Remove the floating points after animation
+                setTimeout(() => {
+                    document.body.removeChild(pointsElement);
+                }, 1500);
+            }
+
+            updatePointsDisplay() {
+                document.getElementById('pointsCount').textContent = this.points;
+            }
+
+            placeNewTriangle() {
+                // Remove old triangle
+                const oldTriangle = document.querySelector('.reward-triangle');
+                if (oldTriangle) {
+                    oldTriangle.parentElement.innerHTML = '';
+                }
+
+                // Generate a new random position (not where the bear currently is)
+                let newX, newY;
+                do {
+                    newX = Math.floor(Math.random() * this.gridSize);
+                    newY = Math.floor(Math.random() * this.gridSize);
+                } while (newX === this.bearPosition.x && newY === this.bearPosition.y);
+
+                // Update target position
+                this.targetPosition = { x: newX, y: newY };
+                this.triangleCollected = false;
+
+                // Place the new triangle
+                const newRewardCell = this.getCell(newX, newY);
+                newRewardCell.innerHTML = '<div class="reward-triangle">🔺</div>';
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            toggleMode() {
+                this.isManualMode = !this.isManualMode;
+                this.updateModeDisplay();
+            }
+
+            updateModeDisplay() {
+                const startBtn = document.getElementById('startBtn');
+                const modeBtn = document.getElementById('modeBtn');
+                const currentModeSpan = document.getElementById('currentMode');
+                const pathDisplay = document.getElementById('pathDisplay');
+                const manualInstructions = document.getElementById('manualInstructions');
+
+                if (this.isManualMode) {
+                    startBtn.style.display = 'none';
+                    modeBtn.textContent = 'Switch to Adventure Mode';
+                    currentModeSpan.textContent = 'Manual Control';
+                    pathDisplay.style.display = 'none';
+                    manualInstructions.style.display = 'block';
+                } else {
+                    startBtn.style.display = 'inline-block';
+                    modeBtn.textContent = 'Switch to Manual Mode';
+                    currentModeSpan.textContent = 'Automatic Adventure';
+                    pathDisplay.style.display = 'block';
+                    manualInstructions.style.display = 'none';
+                }
+            }
+
+            handleKeyPress(event) {
+                if (!this.isManualMode || this.isMoving) return;
+
+                let direction = '';
+                switch(event.key) {
+                    case 'ArrowUp':
+                        direction = 'up';
+                        event.preventDefault();
+                        break;
+                    case 'ArrowDown':
+                        direction = 'down';
+                        event.preventDefault();
+                        break;
+                    case 'ArrowLeft':
+                        direction = 'left';
+                        event.preventDefault();
+                        break;
+                    case 'ArrowRight':
+                        direction = 'right';
+                        event.preventDefault();
+                        break;
+                    default:
+                        return;
+                }
+
+                this.manualMove(direction);
+            }
+
+            async manualMove(direction) {
+                this.isMoving = true;
+                await this.makeMove(direction);
+                this.totalMoves++;
+                this.updateMoveCounter();
+                this.checkWin();
+                this.isMoving = false;
+            }
+
+            reset() {
+                // Reset positions
+                this.bearPosition = { x: 0, y: 0 };
+                this.currentMoveIndex = 0;
+                this.currentStepInMove = 0;
+                this.totalMoves = 0;
+                this.isMoving = false;
+                this.triangleCollected = false;
+                
+                // Reset UI
+                document.getElementById('celebrationMessage').style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
+                this.updateMoveCounter();
+                this.updatePointsDisplay();
+                this.updateModeDisplay();
+                
+                // Recreate grid
+                this.createGrid();
+                this.placeBear();
+                this.placeReward();
+                
+                // Reset bear animation
+                const bear = document.getElementById('teddyBear');
+                bear.style.animation = '';
+            }
+        }
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TeddyBearGame();
+        });
+    </script>
+</body>
+</html> 
